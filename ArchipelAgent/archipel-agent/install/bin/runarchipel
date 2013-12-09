@@ -96,14 +96,12 @@ def main(config):
 
     def exit_handler(exit_code, exit_frame):
         try:
-            print "Archipel interrupted : executing exit proc"
             hypervisor.exit_proc()
         except Exception as e:
-            print "Error while executing exit proc"
+            error("Error while executing exit proc")
         finally:
             os._exit(0)
 
-    print "Registering SIGTERM handler"
     sig.signal(sig.SIGTERM, exit_handler)
 
     # Main runloop
@@ -142,8 +140,13 @@ if __name__ == "__main__":
                         dest="prepare_only",
                         help="Will only prepare stuff if needed. This is only useless in a live CD where you want to init stuff before starting the agent",
                         default=False)
+    parser.add_option("-P", "--pid-file",
+                        dest="pidfile",
+                        help="The pid file of the running child process",
+                        default=False)
 
     options, args = parser.parse_args()
+
     # Sanity checks
     test_libvirt()
 
@@ -153,23 +156,42 @@ if __name__ == "__main__":
     # Initialize logger
     init_log(config)
 
-    # fork
+    # daemonize
     if not options.nofork:
         try:
             pid = os.fork()
-            if pid > 0:
-                sys.exit(0)
         except Exception as e:
             error("Unknown error: %s" % str(e), code=ARCHIPEL_INIT_ERROR_UNKNOWN)
-        os.chdir("/")
-        os.setsid()
-        os.umask(0)
-        try:
-            pid = os.fork()
-            if pid > 0:
-                sys.exit(0)
-        except Exception as e:
-            error("Unknown error: %s" % str(e), code=ARCHIPEL_INIT_ERROR_UNKNOWN)
+
+        if (pid == 0):   # The first child.
+            os.setsid()
+
+            try:
+                pid = os.fork()    # Fork a second child.
+            except Exception as e:
+                error("Unknown error: %s" % str(e), code=ARCHIPEL_INIT_ERROR_UNKNOWN)
+
+            if (pid == 0):    # The second child.
+                os.chdir("/")
+                os.umask(0)
+            else:
+                os._exit(0)    # Exit parent (the first child) of the second child.
+        else:
+            os._exit(0)   # Exit parent of the first child.
+ 
+        # standard input (0)
+        if (hasattr(os, "devnull")):
+            os.open(os.devnull, os.O_RDWR)
+        else:
+            os.open("/dev/null", os.O_RDWR)  
+
+        # Duplicate standard input to standard output and standard error.
+        os.dup2(0, 1)            # standard output (1)
+        os.dup2(0, 2)            # standard error (2)
+
+    # create a pid file in daemon mode (usefull for systemd)
+    if options.pidfile:
+        file(options.pidfile, 'w').write(str(os.getpid()))
 
     # Start the daemon main loop
     main(config)
