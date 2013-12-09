@@ -1,12 +1,13 @@
-Unit]
+[Unit]
 Description=Archipel Agent
 Requires=libvirtd.service
 After=libvirtd.service
 
 [Service]
 Type=forking
-ExecStart=/usr/bin/runarchipel --config=/etc/archipel/archipel.conf --pid-file /var/run/archipel-agent.pid
-PIDFile=/var/run/archipel-agent.pid
+ExecStart=/usr/bin/runarchipel --config=/etc/archipel/archipel.conf --pid-file /run/archipel-agent.pid
+PIDFile=/run/archipel-agent.pid
+Restart=Always
 
 [Install]
 WantedBy=multi-user.target

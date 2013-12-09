@@ -98,7 +98,7 @@ def main(config):
         try:
             hypervisor.exit_proc()
         except Exception as e:
-            error("Error while executing exit proc")
+            error("Error while executing exit proc :%s" % str(e)) 
         finally:
             os._exit(0)
 
