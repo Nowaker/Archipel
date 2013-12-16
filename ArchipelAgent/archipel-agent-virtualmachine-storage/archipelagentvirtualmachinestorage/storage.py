@@ -135,7 +135,7 @@ class TNStorageManagement (TNArchipelPlugin):
         @type path: string
         @param path: the path of the file to check
         """
-        return self._is_file_a("cow", path, ("user-mode linux cow file"))
+        return self._is_file_a("cow", path, ("user-mode linux cow file",))
 
     def _is_file_a_qcow(self, path):
         """
@@ -167,7 +167,7 @@ class TNStorageManagement (TNArchipelPlugin):
         @type path: string
         @param path: the path of the file to check
         """
-        return self._is_file_a("vmdk", path, ("vmware"))
+        return self._is_file_a("vmdk", path, ("vmware",))
 
     def _is_file_an_iso(self, path):
         """
