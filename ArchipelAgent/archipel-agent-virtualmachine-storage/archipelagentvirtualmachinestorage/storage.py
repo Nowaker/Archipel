@@ -111,7 +111,6 @@ class TNStorageManagement (TNArchipelPlugin):
 
 
     ### Utilities
-
     def _is_file_a_drive(self, path):
         """
         check if given drive is a valid virtual drive
@@ -125,14 +124,18 @@ class TNStorageManagement (TNArchipelPlugin):
         or self._is_file_a_vmdk(path) \
         or self._is_file_an_iso(path)
 
+    def _is_file_a(self, extension, path, types):
+        filename = path.lower()
+        output = magic.from_file(path).lower()
+        return filename.endswith("." + extension) or any(s in output for s in types)
+
     def _is_file_a_cow(self, path):
         """
         check if given drive is a valid COW file
         @type path: string
         @param path: the path of the file to check
         """
-        output = magic.from_file(path).lower()
-        return "user-mode linux cow file" in output
+        return self._is_file_a("cow", path, ("user-mode linux cow file"))
 
     def _is_file_a_qcow(self, path):
         """
@@ -140,8 +143,7 @@ class TNStorageManagement (TNArchipelPlugin):
         @type path: string
         @param path: the path of the file to check
         """
-        output = magic.from_file(path).lower()
-        return "format: qcow , version: 1" in output or "qemu qcow image (v1)" in output
+        return self._is_file_a("qcow", path, ("format: qcow , version: 1", "qemu qcow image (v1)"))
 
     def _is_file_a_qcow2(self, path):
         """
@@ -149,8 +151,7 @@ class TNStorageManagement (TNArchipelPlugin):
         @type path: string
         @param path: the path of the file to check
         """
-        output = magic.from_file(path).lower()
-        return "format: qcow , version: 2" in output or "qemu qcow image (v2)" in output
+        return self._is_file_a("qcow2", path, ("format: qcow , version: 2", "qemu qcow image (v2)"))
 
     def _is_file_a_raw(self, path):
         """
@@ -158,8 +159,7 @@ class TNStorageManagement (TNArchipelPlugin):
         @type path: string
         @param path: the path of the file to check
         """
-        output = magic.from_file(path).lower()
-        return output == "data" or "x86 boot sector" in output or "filesystem data" in output
+        return self._is_file_a("raw", path, ("boot sector", "filesystem data"))
 
     def _is_file_a_vmdk(self, path):
         """
@@ -167,8 +167,7 @@ class TNStorageManagement (TNArchipelPlugin):
         @type path: string
         @param path: the path of the file to check
         """
-        output = magic.from_file(path).lower()
-        return "vmware" in output
+        return self._is_file_a("vmdk", path, ("vmware"))
 
     def _is_file_an_iso(self, path):
         """
@@ -176,7 +175,7 @@ class TNStorageManagement (TNArchipelPlugin):
         @type path: string
         @param path: the path of the file to check
         """
-        return path.lower().endswith(".iso") or "iso 9660" in output or "x86 boot sector" in output or "dos/mbr boot sector" in output
+        return self._is_file_a("iso", path, ("iso 9660", "boot sector"))
 
 
     ### XMPP Processing
