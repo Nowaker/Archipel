@@ -124,22 +124,31 @@ class TNXMPPServerController (TNXMPPServerControllerBase):
         """
         server = self.entity.jid.getDomain()
         answer = self._send_xmlrpc_call(self.xmlrpc_server.registered_users, {"host": server})
-        nodes = []
+
         bound_begin = page * self.user_page_size
         bound_end = bound_begin + self.user_page_size
-        users = sorted(answer["users"], cmp=lambda x, y: cmp(x["username"], y["username"]))[bound_begin:bound_end]
+
+        nodes = []
+        users = sorted(answer["users"], cmp=lambda x, y: cmp(x["username"], y["username"]))
         for user in users:
+            if len(nodes) > bound_end:
+                break
+
             entity_type = "human"
             try:
                 answer = self._send_xmlrpc_call(self.xmlrpc_server.get_vcard, {"host": server, "user": user["username"], "name" : "ROLE"})
+
                 if answer["content"] in ("hypervisor", "virtualmachine"):
                     entity_type = answer["content"]
+
                 if only_humans and not entity_type == "human":
                     continue
             except:
                 pass
+
             nodes.append(xmpp.Node("user", attrs={"jid": "%s@%s" % (user["username"], server), "type": entity_type}))
-        base_reply.setQueryPayload(nodes)
+
+        base_reply.setQueryPayload(nodes[bound_begin:bound_end])
         self.entity.xmppclient.send(base_reply)
 
     def users_filter(self, base_reply, filterString):
